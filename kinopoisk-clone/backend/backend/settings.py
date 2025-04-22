@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -27,6 +28,17 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
+    'ALGORITHM': 'HS256',
+    'SIGNING_KEY': SECRET_KEY,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
 
 # Application definition
 
@@ -146,6 +158,17 @@ AUTH_USER_MODEL = 'users.CustomUser'
 
 KINOPOISK_API_KEY = '723d5c65-b483-4705-9e0d-c5903d3696b5'
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Kinopoisk API',
+    'DESCRIPTION': 'API для аналога Кинопоиска',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SCHEMA_PATH_PREFIX': r'/api/',
+}
 
 LOGGING = {
     'version': 1,

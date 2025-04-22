@@ -1,6 +1,7 @@
 import MovieCarousel from '@/components/MovieCarousel';
 import { getPopularMovies } from '@/lib/server-api';
 import Link from 'next/link';
+import './globals.css';
 
 export default async function Home() {
   const popularMovies = await getPopularMovies();

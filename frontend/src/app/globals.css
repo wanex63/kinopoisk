@@ -1,26 +1,33 @@
-@import "tailwindcss";
+/* globals.css */
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Ваши кастомные стили */
+body {
+  @apply bg-white dark:bg-gray-900 text-gray-900 dark:text-white;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: rgb(var(--foreground-rgb));
+    background: linear-gradient(
+        to bottom,
+        transparent,
+        rgb(var(--background-end-rgb)),
+        rgb(var(--background-start-rgb))
+    );
 }
