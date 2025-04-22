@@ -21,35 +21,36 @@ class Command(BaseCommand):
 
     def fetch_popular_movies(self):
         try:
-            response = requests.get(
-                f"{KINOPOISK_API_URL}top?type=TOP_100_POPULAR_FILMS&page=1",
-                headers=HEADERS
-            )
-            response.raise_for_status()
+            for page in range(1, 3):  # Страницы 1 и 2 = 100 фильмов
+                response = requests.get(
+                    f"{KINOPOISK_API_URL}top?type=TOP_100_POPULAR_FILMS&page={page}",
+                    headers=HEADERS
+                )
+                response.raise_for_status()
 
-            films = response.json().get('films', [])
-            logger.info(f"Found {len(films)} films to process")
+                films = response.json().get('films', [])
+                logger.info(f"[Page {page}] Found {len(films)} films to process")
 
-            for film_data in films:
-                kinopoisk_id = film_data.get('filmId')
-                logger.info(f"Processing film ID: {kinopoisk_id} - {film_data.get('nameRu')}")
+                for film_data in films:
+                    kinopoisk_id = film_data.get('filmId')
+                    logger.info(f"Processing film ID: {kinopoisk_id} - {film_data.get('nameRu')}")
 
-                if Movie.objects.filter(kinopoisk_id=kinopoisk_id).exists():
-                    logger.info(f"Film {kinopoisk_id} already exists, skipping")
-                    continue
+                    if Movie.objects.filter(kinopoisk_id=kinopoisk_id).exists():
+                        logger.info(f"Film {kinopoisk_id} already exists, skipping")
+                        continue
 
-                try:
-                    detail_response = requests.get(
-                        f"{KINOPOISK_API_URL}{kinopoisk_id}",
-                        headers=HEADERS
-                    )
-                    detail_response.raise_for_status()
-                    detail_data = detail_response.json()
-                    self.create_movie_from_data(detail_data)
-                except requests.exceptions.RequestException as e:
-                    logger.error(f"Failed to fetch details for film {kinopoisk_id}: {e}")
-                except Exception as e:
-                    logger.error(f"Error processing film {kinopoisk_id}: {e}")
+                    try:
+                        detail_response = requests.get(
+                            f"{KINOPOISK_API_URL}{kinopoisk_id}",
+                            headers=HEADERS
+                        )
+                        detail_response.raise_for_status()
+                        detail_data = detail_response.json()
+                        self.create_movie_from_data(detail_data)
+                    except requests.exceptions.RequestException as e:
+                        logger.error(f"Failed to fetch details for film {kinopoisk_id}: {e}")
+                    except Exception as e:
+                        logger.error(f"Error processing film {kinopoisk_id}: {e}")
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to fetch popular films: {e}")

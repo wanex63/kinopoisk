@@ -1,12 +1,14 @@
 'use client';
 
-import { useAuth } from '@/hooks/use-auth';
+import { useState } from 'react';
 import Link from 'next/link';
-import { SubmitHandler, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2 } from 'lucide-react';
+import axios from 'axios';
 
 type FormData = {
   username: string;
@@ -16,7 +18,9 @@ type FormData = {
 };
 
 export default function RegisterPage() {
-  const { register: registerUser, isLoading, error, setError } = useAuth();
+  const [serverError, setServerError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -24,56 +28,65 @@ export default function RegisterPage() {
     formState: { errors },
   } = useForm<FormData>();
 
-  const onSubmit: SubmitHandler<FormData> = async (data) => {
+  const onSubmit = async (data: FormData) => {
     if (data.password !== data.confirmPassword) {
-      setError('Пароли не совпадают');
+      setServerError('Пароли не совпадают');
       return;
     }
 
+    setServerError(null);
+    setIsSubmitting(true);
+
     try {
-      await registerUser({
+      // Замените этот URL на ваш реальный API endpoint
+      const response = await axios.post('/api/auth/register', {
         username: data.username,
         email: data.email,
         password: data.password,
       });
-    } catch (err) {
-      setError('Ошибка регистрации. Пожалуйста, попробуйте позже');
+
+      if (response.data.success) {
+        // Перенаправление после успешной регистрации
+        window.location.href = '/dashboard';
+      } else {
+        setServerError(response.data.message || 'Ошибка регистрации');
+      }
+    } catch (error: any) {
+      setServerError(
+        error.response?.data?.message ||
+        'Ошибка соединения. Попробуйте позже'
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-      <div className="w-full max-w-md space-y-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8 space-y-6">
         <div className="text-center">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-            Создать аккаунт
-          </h1>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            Заполните форму для регистрации
+          <h1 className="text-2xl font-bold text-gray-900">Регистрация</h1>
+          <p className="text-gray-600 mt-2">
+            Создайте новый аккаунт
           </p>
         </div>
 
-        {error && (
+        {serverError && (
           <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>{serverError}</AlertDescription>
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <Label htmlFor="username">Имя пользователя</Label>
             <Input
               id="username"
-              {...register('username', {
-                required: 'Имя пользователя обязательно',
-                minLength: {
-                  value: 3,
-                  message: 'Минимум 3 символа',
-                },
-              })}
+              {...register('username', { required: 'Обязательное поле' })}
+              className="mt-1"
             />
             {errors.username && (
-              <p className="mt-1 text-sm text-red-600">{errors.username.message}</p>
+              <p className="text-sm text-red-600 mt-1">{errors.username.message}</p>
             )}
           </div>
 
@@ -83,15 +96,16 @@ export default function RegisterPage() {
               id="email"
               type="email"
               {...register('email', {
-                required: 'Email обязателен',
+                required: 'Обязательное поле',
                 pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: 'Некорректный email',
-                },
+                  value: /^\S+@\S+$/i,
+                  message: 'Некорректный email'
+                }
               })}
+              className="mt-1"
             />
             {errors.email && (
-              <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+              <p className="text-sm text-red-600 mt-1">{errors.email.message}</p>
             )}
           </div>
 
@@ -101,15 +115,16 @@ export default function RegisterPage() {
               id="password"
               type="password"
               {...register('password', {
-                required: 'Пароль обязателен',
+                required: 'Обязательное поле',
                 minLength: {
                   value: 6,
-                  message: 'Минимум 6 символов',
-                },
+                  message: 'Минимум 6 символов'
+                }
               })}
+              className="mt-1"
             />
             {errors.password && (
-              <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+              <p className="text-sm text-red-600 mt-1">{errors.password.message}</p>
             )}
           </div>
 
@@ -118,23 +133,28 @@ export default function RegisterPage() {
             <Input
               id="confirmPassword"
               type="password"
-              {...register('confirmPassword', {
-                required: 'Подтверждение пароля обязательно',
-              })}
+              {...register('confirmPassword', { required: 'Обязательное поле' })}
+              className="mt-1"
             />
           </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Регистрация...' : 'Зарегистрироваться'}
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Регистрируем...
+              </>
+            ) : 'Зарегистрироваться'}
           </Button>
         </form>
 
-        <div className="text-center text-sm">
+        <div className="text-center text-sm text-gray-600">
           Уже есть аккаунт?{' '}
-          <Link
-            href="/login"
-            className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
-          >
+          <Link href="/login" className="text-blue-600 hover:underline">
             Войти
           </Link>
         </div>

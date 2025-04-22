@@ -7,7 +7,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 class Genre(models.Model):
     name = models.CharField(max_length=100, unique=True)
-    slug = models.SlugField(max_length=100, unique=True, blank=True, editable=False)
+    slug = models.SlugField(max_length=100, unique=True)
 
     def save(self, *args, **kwargs):
         if not self.slug:

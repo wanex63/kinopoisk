@@ -6,8 +6,14 @@ const serverApi = axios.create({
 
 export async function getMovies(search?: string) {
   const params = search ? { search } : {};
-  const response = await serverApi.get('/movies/', { params });
-  return response.data;
+
+  try {
+    const response = await serverApi.get('/movies/', { params });
+    return response.data;
+  } catch (error) {
+    console.error('Error occurred in getMovies:', error);
+    throw error;
+  }
 }
 
 export async function getPopularMovies() {
