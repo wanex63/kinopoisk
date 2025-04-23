@@ -56,7 +56,6 @@ export default function Header() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-6">
-          <NavLink href="/movies">Фильмы</NavLink>
           <NavLink href="/about">О нас</NavLink>
 
           {user ? (
@@ -97,24 +96,32 @@ const NavLink = ({ href, children, onClick }: { href: string; children: React.Re
   </Link>
 );
 
-const UserAvatar = ({ user }: { user: any }) => (
-  <Link href="/profile" className="flex items-center gap-2 group">
-    {user.avatar ? (
-      <Image
-        src={user.avatar}
-        alt={user.username}
-        width={32}
-        height={32}
-        className="rounded-full"
-      />
-    ) : (
-      <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
-        {user.username.charAt(0).toUpperCase()}
+const UserAvatar = ({ user }: { user: any }) => {
+  // Безопасно получаем имя пользователя, всегда используем имя зарегистрированного пользователя
+  const username = user?.username || (user?.email ? user.email.split('@')[0] : '');
+  const displayName = username || 'Пользователь';
+  
+  return (
+    <Link href="/profile">
+      <div className="flex items-center gap-2">
+        {user?.avatar ? (
+          <Image
+            src={user.avatar}
+            alt={displayName}
+            width={32}
+            height={32}
+            className="rounded-full"
+          />
+        ) : (
+          <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white font-semibold">
+            {username ? username[0].toUpperCase() : 'U'}
+          </div>
+        )}
+        <span className="hidden md:block">{displayName}</span>
       </div>
-    )}
-    <span className="group-hover:underline">{user.username}</span>
-  </Link>
-);
+    </Link>
+  );
+};
 
 const AuthButtons = () => (
   <div className="flex gap-3">
@@ -147,27 +154,35 @@ const MobileMenu = ({
   user: any;
   onLogout: () => void;
   onNavigate: () => void
-}) => (
-  <div className={`md:hidden bg-gray-800 px-4 py-2 ${isOpen ? 'block' : 'hidden'}`}>
-    <div className="flex flex-col gap-3">
-      <NavLink href="/movies" onClick={onNavigate}>Фильмы</NavLink>
-      <NavLink href="/about" onClick={onNavigate}>О нас</NavLink>
-      {user ? (
-        <>
-          <NavLink href="/profile" onClick={onNavigate}>Профиль</NavLink>
-          <button
-            onClick={onLogout}
-            className="text-left py-2 text-red-400 hover:text-red-300 transition-colors"
-          >
-            Выйти
-          </button>
-        </>
-      ) : (
-        <>
-          <NavLink href="/login" onClick={onNavigate}>Войти</NavLink>
-          <NavLink href="/register" onClick={onNavigate}>Регистрация</NavLink>
-        </>
-      )}
+}) => {
+  // Безопасно получаем имя пользователя, всегда используем имя зарегистрированного пользователя
+  const username = user?.username || (user?.email ? user.email.split('@')[0] : '');
+  const displayName = username || 'Пользователь';
+  
+  return (
+    <div className={`md:hidden bg-gray-800 px-4 py-2 ${isOpen ? 'block' : 'hidden'}`}>
+      <div className="flex flex-col gap-3">
+        <NavLink href="/movies" onClick={onNavigate}>Фильмы</NavLink>
+        <NavLink href="/about" onClick={onNavigate}>О нас</NavLink>
+        {user ? (
+          <>
+            <NavLink href="/profile" onClick={onNavigate}>
+              Профиль {username && `(${username})`}
+            </NavLink>
+            <button
+              onClick={onLogout}
+              className="text-left py-2 text-red-400 hover:text-red-300 transition-colors"
+            >
+              Выйти
+            </button>
+          </>
+        ) : (
+          <>
+            <NavLink href="/login" onClick={onNavigate}>Войти</NavLink>
+            <NavLink href="/register" onClick={onNavigate}>Регистрация</NavLink>
+          </>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};

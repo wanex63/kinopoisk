@@ -10,12 +10,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2 } from 'lucide-react';
 import axios from 'axios';
 
-type FormData = {
+// Define the form data type
+interface FormData {
   username: string;
   email: string;
   password: string;
   confirmPassword: string;
-};
+}
 
 export default function RegisterPage() {
   const [serverError, setServerError] = useState<string | null>(null);
@@ -38,24 +39,42 @@ export default function RegisterPage() {
     setIsSubmitting(true);
 
     try {
-      // Замените этот URL на ваш реальный API endpoint
-      const response = await axios.post('/api/auth/register', {
+      const response = await axios.post('/api/auth/register/', {
         username: data.username,
         email: data.email,
         password: data.password,
+        avatar: null,
+        bio: ''
       });
 
-      if (response.data.success) {
-        // Перенаправление после успешной регистрации
-        window.location.href = '/dashboard';
+      // Если статус 201 или есть поле detail в ответе, считаем регистрацию успешной
+      if (response.status === 201 || response.data.detail) {
+        window.location.href = '/';
       } else {
         setServerError(response.data.message || 'Ошибка регистрации');
       }
     } catch (error: any) {
-      setServerError(
-        error.response?.data?.message ||
-        'Ошибка соединения. Попробуйте позже'
-      );
+      // Проверяем наличие подробных ошибок валидации
+      if (error.response?.data) {
+        // Если это объект с ошибками валидации, отображаем первую
+        const errData = error.response.data;
+        let firstError = 
+          errData.username?.[0] || 
+          errData.email?.[0] || 
+          errData.password?.[0] || 
+          errData.detail ||
+          error.response.data.message ||
+          'Ошибка регистрации';
+          
+        // Делаем сообщение более дружелюбным
+        if (firstError === 'A user with that username already exists.') {
+          firstError = 'Пользователь с таким именем уже существует. Пожалуйста, выберите другое имя.';
+        }
+        
+        setServerError(firstError);
+      } else {
+        setServerError('Ошибка соединения. Попробуйте позже');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -79,11 +98,11 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
-            <Label htmlFor="username">Имя пользователя</Label>
+            <Label htmlFor="username" className="text-black">Имя пользователя</Label>
             <Input
               id="username"
               {...register('username', { required: 'Обязательное поле' })}
-              className="mt-1"
+              className="mt-1 text-black"
             />
             {errors.username && (
               <p className="text-sm text-red-600 mt-1">{errors.username.message}</p>
@@ -91,7 +110,7 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-black">Email</Label>
             <Input
               id="email"
               type="email"
@@ -102,7 +121,7 @@ export default function RegisterPage() {
                   message: 'Некорректный email'
                 }
               })}
-              className="mt-1"
+              className="mt-1 text-black"
             />
             {errors.email && (
               <p className="text-sm text-red-600 mt-1">{errors.email.message}</p>
@@ -110,18 +129,18 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <Label htmlFor="password">Пароль</Label>
+            <Label htmlFor="password" className="text-black">Пароль</Label>
             <Input
               id="password"
               type="password"
               {...register('password', {
                 required: 'Обязательное поле',
                 minLength: {
-                  value: 6,
-                  message: 'Минимум 6 символов'
+                  value: 8,
+                  message: 'Минимум 8 символов'
                 }
               })}
-              className="mt-1"
+              className="mt-1 text-black"
             />
             {errors.password && (
               <p className="text-sm text-red-600 mt-1">{errors.password.message}</p>
@@ -129,18 +148,18 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <Label htmlFor="confirmPassword">Подтвердите пароль</Label>
+            <Label htmlFor="confirmPassword" className="text-black">Подтвердите пароль</Label>
             <Input
               id="confirmPassword"
               type="password"
               {...register('confirmPassword', { required: 'Обязательное поле' })}
-              className="mt-1"
+              className="mt-1 text-black"
             />
           </div>
 
           <Button
             type="submit"
-            className="w-full"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
             disabled={isSubmitting}
           >
             {isSubmitting ? (

@@ -13,11 +13,11 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="text-lg font-semibold mb-4">Остальное</h4>
+            <h4 className="text-lg font-semibold mb-4">Меню</h4>
             <ul className="space-y-2">
               <li>
-                <Link href="/movies" className="text-gray-400 hover:text-yellow-400 transition-colors">
-                  Фильмы
+                <Link href="/" className="text-gray-400 hover:text-yellow-400 transition-colors">
+                  Главная
                 </Link>
               </li>
               <li>
@@ -43,7 +43,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-gray-800 mt-8 pt-6 text-center text-gray-500">
-          <p>&copy; {new Date().getFullYear()} КИНОПОИСК.ВСЕ ПРАВА ЗАЩИЩЕНЫ</p>
+          <p>&copy; {new Date().getFullYear()} КИНОПОИСК. ВСЕ ПРАВА ЗАЩИЩЕНЫ</p>
         </div>
       </div>
     </footer>
