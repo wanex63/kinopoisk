@@ -1,60 +1,224 @@
-import MovieCarousel from '@/components/MovieCarousel';
-import { getPopularMovies } from '@/lib/server-api';
+'use client';
+
 import Link from 'next/link';
-import './globals.css';
+import Image from 'next/image';
+import { useState, useEffect } from 'react';
+import { MovieListItem } from '@/types/movie';
+import MoviePlaceholder from '@/components/MoviePlaceholder';
+import MovieCarousel from '@/components/MovieCarousel';
+import moviesData from '@/data/movies.json';
+import { HeartIcon } from '@heroicons/react/24/solid';
 
-export default async function Home() {
-  const popularMovies = await getPopularMovies();
+// Трансформируем данные в нужный формат
+const POPULAR_MOVIES: MovieListItem[] = moviesData.map(movie => ({
+  id: movie.id,
+  title: movie.title,
+  year: movie.year,
+  rating: movie.rating,
+  image: movie.image,
+  genre: movie.genre
+}));
 
+const MovieCard = ({ movie, isFavorite, onToggleFavorite }: { 
+  movie: MovieListItem;
+  isFavorite: boolean;
+  onToggleFavorite: (id: string) => void;
+}) => {
+  const [imgError, setImgError] = useState(false);
+  
   return (
-    <>
-      <section className="py-16 bg-gradient-to-b from-gray-900 to-gray-800 text-white">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">КИНОПОИСК</h1>
-          <p className="text-xl mb-8 max-w-2xl mx-auto">
-            Ваша идеальная платформа для знакомства с миром кино и сериалов. Смотрите, оценивайте и делитесь впечатлениями!
-          </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
+    <div className="block transition-transform hover:scale-[1.02] hover:shadow-lg rounded-lg overflow-hidden bg-gray-900 border border-gray-800 relative">
+      <Link 
+        href={`/movies/${movie.id}`}
+        className="block"
+      >
+        <div className="relative h-[300px]">
+          {!imgError ? (
+            <Image
+              src={movie.image}
+              alt={movie.title}
+              fill
+              style={{ objectFit: 'cover' }}
+              className="transition-opacity hover:opacity-95"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <MoviePlaceholder 
+              title={movie.title} 
+              className="absolute inset-0 w-full h-full"
+            />
+          )}
+          <div className="absolute top-2 right-2 bg-orange-500 text-black px-2 py-1 rounded-md font-bold z-10">
+            {movie.rating.toFixed(1)}
           </div>
         </div>
-      </section>
-
-      <section className="py-12 bg-gray-100">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold mb-8 text-center">Популярные фильмы</h2>
-          <MovieCarousel movies={popularMovies} />
-        </div>
-      </section>
-
-      <section className="py-12 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-3 gap-8">
-            <FeatureCard
-              icon={
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              }
-              title="Богатая коллекция"
-              description="Тысячи фильмов и сериалов с подробным описанием, рейтингами и отзывами"
-            />
-            <FeatureCard
-              icon={
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              }
-              title="Личный кабинет"
-              description="Сохраняйте понравившиеся фильмы в избранное и настройте личные предпочтения"
-            />
-            <FeatureCard
-              icon={
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-              }
-              title="Рекомендации"
-              description="Получайте персональные рекомендации на основе ваших интересов и оценок"
-            />
+        <div className="p-4">
+          <h3 className="text-lg font-semibold mb-1 text-white">{movie.title}</h3>
+          <div className="flex justify-between text-sm text-gray-400">
+            <span>{movie.year}</span>
+            <span className="truncate ml-2">{movie.genre}</span>
           </div>
         </div>
-      </section>
-    </>
+      </Link>
+      <button 
+        onClick={(e) => {
+          e.preventDefault();
+          onToggleFavorite(movie.id);
+        }}
+        className={`absolute top-3 left-3 p-2 rounded-full z-20 transition-colors ${
+          isFavorite 
+            ? 'bg-orange-500 text-white' 
+            : 'bg-black/50 text-gray-400 hover:text-white hover:bg-black/70'
+        }`}
+        aria-label={isFavorite ? 'Удалить из избранного' : 'Добавить в избранное'}
+      >
+        <HeartIcon className="h-5 w-5" />
+      </button>
+    </div>
   );
+};
+
+export default function Home() {
+  // Состояние для пагинации
+  const [currentPage, setCurrentPage] = useState(1);
+  const moviesPerPage = 3;
+  
+  // Состояние для избранных фильмов
+  const [favorites, setFavorites] = useState<string[]>([]);
+
+  // Загрузка избранных фильмов из localStorage при монтировании компонента
+  useEffect(() => {
+    const storedFavorites = localStorage.getItem('favorites');
+    if (storedFavorites) {
+      setFavorites(JSON.parse(storedFavorites));
+    }
+  }, []);
+
+  // Сохранение избранных фильмов в localStorage при изменении состояния
+  useEffect(() => {
+    localStorage.setItem('favorites', JSON.stringify(favorites));
+  }, [favorites]);
+
+  // Функция для добавления/удаления фильма из избранного
+  const toggleFavorite = (id: string) => {
+    setFavorites(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(movieId => movieId !== id);
+      } else {
+        return [...prev, id];
+      }
+    });
+  };
+  
+  // Вычисляем количество страниц
+  const totalPages = Math.ceil(POPULAR_MOVIES.length / moviesPerPage);
+  
+  // Получаем фильмы для текущей страницы
+  const indexOfLastMovie = currentPage * moviesPerPage;
+  const indexOfFirstMovie = indexOfLastMovie - moviesPerPage;
+  const currentMovies = POPULAR_MOVIES.slice(indexOfFirstMovie, indexOfLastMovie);
+  
+  // Функции для пагинации
+  const goToNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  const goToPrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
+  const goToPage = (pageNumber: number) => setCurrentPage(pageNumber);
+  
+  return (
+    <main className="min-h-screen bg-black text-white">
+      <div className="container mx-auto px-4 py-8">
+        <section className="mb-12">
+          <div className="bg-gradient-to-r from-gray-900 to-black rounded-2xl p-8 border-l-4 border-orange-500">
+            <h1 className="text-4xl font-bold mb-4">Добро пожаловать на Кинопоиск</h1>
+            <p className="text-xl mb-6 text-gray-300">Найдите и откройте для себя лучшие фильмы со всего мира</p>
+            <Link href="/movies" className="inline-block bg-orange-500 hover:bg-orange-600 text-black font-bold py-3 px-6 rounded-lg transition-colors">
+              Смотреть каталог
+            </Link>
+          </div>
+        </section>
+
+        <section className="mb-12">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">Популярные фильмы</h2>
+            <Link href="/movies" className="text-orange-500 hover:text-orange-400 transition-colors">
+              Смотреть все
+            </Link>
+          </div>
+          
+          <MovieCarousel movies={POPULAR_MOVIES} favorites={favorites} onToggleFavorite={toggleFavorite} />
+        </section>
+        
+        <section className="mb-12">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-bold">Все фильмы</h2>
+            {favorites.length > 0 && (
+              <Link href="/favorites" className="text-orange-500 hover:text-orange-400 transition-colors flex items-center gap-1">
+                <HeartIcon className="h-5 w-5" />
+                <span>Избранное ({favorites.length})</span>
+              </Link>
+            )}
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {currentMovies.map((movie) => (
+              <MovieCard 
+                key={movie.id} 
+                movie={movie} 
+                isFavorite={favorites.includes(movie.id)} 
+                onToggleFavorite={toggleFavorite} 
+              />
+            ))}
+          </div>
+          
+          {/* Пагинация */}
+          <div className="flex justify-center items-center space-x-2">
+            <button 
+              onClick={goToPrevPage}
+              disabled={currentPage === 1}
+              className="px-4 py-2 rounded-md bg-gray-800 hover:bg-gray-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Назад
+            </button>
+            
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => goToPage(page)}
+                className={`px-4 py-2 rounded-md ${
+                  currentPage === page
+                    ? 'bg-orange-500 text-black'
+                    : 'bg-gray-800 text-white hover:bg-gray-700'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            
+            <button
+              onClick={goToNextPage}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 rounded-md bg-gray-800 hover:bg-gray-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Вперед
+            </button>
+          </div>
+        </section>
+        
+        <section className="mb-12">
+          <div className="bg-gray-900 rounded-lg p-6 border-r-4 border-orange-500">
+            <h2 className="text-2xl font-bold mb-4">О нашем сервисе</h2>
+            <p className="text-gray-300 mb-4">
+              Кинопоиск - это платформа для поиска и просмотра информации о фильмах со всего мира.
+              Мы предоставляем подробные описания, рейтинги и отзывы, чтобы помочь вам выбрать 
+              идеальный фильм для просмотра.
+            </p>
+            <Link href="/about" className="text-orange-500 hover:text-orange-400 transition-colors">
+              Узнать больше
+            </Link>
+          </div>
+        </section>
+      </div>
+    </main>
+  )
 }
 
 function FeatureCard({ icon, title, description }: {
@@ -63,14 +227,14 @@ function FeatureCard({ icon, title, description }: {
   description: string;
 }) {
   return (
-    <div className="text-center p-6 rounded-lg hover:bg-gray-50 transition-colors">
-      <div className="bg-yellow-100 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
-        <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div className="text-center p-6 rounded-lg hover:bg-gray-900 transition-colors border border-gray-800">
+      <div className="bg-orange-900 w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4">
+        <svg className="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           {icon}
         </svg>
       </div>
-      <h3 className="text-xl font-semibold mb-2">{title}</h3>
-      <p className="text-gray-600">{description}</p>
+      <h3 className="text-xl font-semibold mb-2 text-white">{title}</h3>
+      <p className="text-gray-400">{description}</p>
     </div>
   );
 }

@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2 } from 'lucide-react';
-import axios from 'axios';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { auth } from '@/lib/client-api';
 
-// Define the form data type
 interface FormData {
   username: string;
   email: string;
@@ -21,6 +21,9 @@ interface FormData {
 export default function RegisterPage() {
   const [serverError, setServerError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const router = useRouter();
 
   const {
     register,
@@ -39,42 +42,39 @@ export default function RegisterPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await axios.post('/api/auth/register/', {
-        username: data.username,
-        email: data.email,
-        password: data.password,
-        avatar: null,
-        bio: ''
+      const response = await fetch('/api/auth/register/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: data.username,
+          email: data.email,
+          password: data.password,
+        }),
       });
 
-      // Если статус 201 или есть поле detail в ответе, считаем регистрацию успешной
-      if (response.status === 201 || response.data.detail) {
-        window.location.href = '/';
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData.detail || responseData.message || 'Ошибка регистрации');
+      }
+
+      if (responseData.access) {
+        auth.setToken(responseData.access);
+        if (responseData.refresh) {
+          localStorage.setItem('refreshToken', responseData.refresh);
+        }
+        router.push('/');
       } else {
-        setServerError(response.data.message || 'Ошибка регистрации');
+        router.push('/login');
       }
     } catch (error: any) {
-      // Проверяем наличие подробных ошибок валидации
-      if (error.response?.data) {
-        // Если это объект с ошибками валидации, отображаем первую
-        const errData = error.response.data;
-        let firstError = 
-          errData.username?.[0] || 
-          errData.email?.[0] || 
-          errData.password?.[0] || 
-          errData.detail ||
-          error.response.data.message ||
-          'Ошибка регистрации';
-          
-        // Делаем сообщение более дружелюбным
-        if (firstError === 'A user with that username already exists.') {
-          firstError = 'Пользователь с таким именем уже существует. Пожалуйста, выберите другое имя.';
-        }
-        
-        setServerError(firstError);
-      } else {
-        setServerError('Ошибка соединения. Попробуйте позже');
-      }
+      setServerError(
+        error.message === 'A user with that username already exists.'
+          ? 'Пользователь с таким именем уже существует'
+          : error.message || 'Ошибка регистрации'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -83,6 +83,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8 space-y-6">
+        {/* Заголовок формы */}
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900">Регистрация</h1>
           <p className="text-gray-600 mt-2">
@@ -90,27 +91,37 @@ export default function RegisterPage() {
           </p>
         </div>
 
+        {/* Сообщение об ошибке */}
         {serverError && (
           <Alert variant="destructive">
             <AlertDescription>{serverError}</AlertDescription>
           </Alert>
         )}
 
+        {/* Форма регистрации */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          {/* Поле имени пользователя */}
           <div>
-            <Label htmlFor="username" className="text-black">Имя пользователя</Label>
+            <Label htmlFor="username" className="text-gray-900">Имя пользователя</Label>
             <Input
               id="username"
-              {...register('username', { required: 'Обязательное поле' })}
-              className="mt-1 text-black"
+              {...register('username', {
+                required: 'Обязательное поле',
+                minLength: {
+                  value: 3,
+                  message: 'Минимум 3 символа'
+                }
+              })}
+              className="mt-1 text-gray-900 border-gray-300 focus:ring-orange-500 focus:border-orange-500"
             />
             {errors.username && (
               <p className="text-sm text-red-600 mt-1">{errors.username.message}</p>
             )}
           </div>
 
+          {/* Поле email */}
           <div>
-            <Label htmlFor="email" className="text-black">Email</Label>
+            <Label htmlFor="email" className="text-gray-900">Email</Label>
             <Input
               id="email"
               type="email"
@@ -121,45 +132,76 @@ export default function RegisterPage() {
                   message: 'Некорректный email'
                 }
               })}
-              className="mt-1 text-black"
+              className="mt-1 text-gray-900 border-gray-300 focus:ring-orange-500 focus:border-orange-500"
             />
             {errors.email && (
               <p className="text-sm text-red-600 mt-1">{errors.email.message}</p>
             )}
           </div>
 
+          {/* Поле пароля */}
           <div>
-            <Label htmlFor="password" className="text-black">Пароль</Label>
-            <Input
-              id="password"
-              type="password"
-              {...register('password', {
-                required: 'Обязательное поле',
-                minLength: {
-                  value: 8,
-                  message: 'Минимум 8 символов'
-                }
-              })}
-              className="mt-1 text-black"
-            />
+            <Label htmlFor="password" className="text-gray-900">Пароль</Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                {...register('password', {
+                  required: 'Обязательное поле',
+                  minLength: {
+                    value: 8,
+                    message: 'Минимум 8 символов'
+                  }
+                })}
+                className="mt-1 text-gray-900 border-gray-300 focus:ring-orange-500 focus:border-orange-500 pr-10"
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5 text-gray-500" />
+                ) : (
+                  <Eye className="h-5 w-5 text-gray-500" />
+                )}
+              </button>
+            </div>
             {errors.password && (
               <p className="text-sm text-red-600 mt-1">{errors.password.message}</p>
             )}
           </div>
 
+          {/* Поле подтверждения пароля */}
           <div>
-            <Label htmlFor="confirmPassword" className="text-black">Подтвердите пароль</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              {...register('confirmPassword', { required: 'Обязательное поле' })}
-              className="mt-1 text-black"
-            />
+            <Label htmlFor="confirmPassword" className="text-gray-900">Подтвердите пароль</Label>
+            <div className="relative">
+              <Input
+                id="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                {...register('confirmPassword', {
+                  required: 'Обязательное поле'
+                })}
+                className="mt-1 text-gray-900 border-gray-300 focus:ring-orange-500 focus:border-orange-500 pr-10"
+              />
+              <button
+                type="button"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="h-5 w-5 text-gray-500" />
+                ) : (
+                  <Eye className="h-5 w-5 text-gray-500" />
+                )}
+              </button>
+            </div>
           </div>
 
+          {/* Кнопка регистрации */}
           <Button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            className="w-full bg-orange-600 hover:bg-orange-700 text-white"
             disabled={isSubmitting}
           >
             {isSubmitting ? (
@@ -171,9 +213,10 @@ export default function RegisterPage() {
           </Button>
         </form>
 
+        {/* Ссылка на вход */}
         <div className="text-center text-sm text-gray-600">
           Уже есть аккаунт?{' '}
-          <Link href="/login" className="text-blue-600 hover:underline">
+          <Link href="/login" className="text-orange-600 hover:underline">
             Войти
           </Link>
         </div>

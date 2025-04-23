@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, XMarkIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import { useEffect, useState } from 'react';
 import { auth } from '@/lib/client-api';
 import Image from 'next/image';
@@ -18,10 +18,17 @@ export default function Header() {
     const checkAuth = async () => {
       setIsLoading(true);
       try {
-        const currentUser = await auth.getCurrentUser();
-        setUser(currentUser);
+        const currentUser = auth.getCurrentUser();
+        if (!currentUser && localStorage.getItem('token')) {
+          // Попытка обновить токен
+          const refreshedUser = await auth.refreshToken();
+          setUser(refreshedUser);
+        } else {
+          setUser(currentUser);
+        }
       } catch (error) {
         console.error('Auth check error:', error);
+        auth.removeToken();
         setUser(null);
       } finally {
         setIsLoading(false);
@@ -33,7 +40,7 @@ export default function Header() {
 
   const handleLogout = async () => {
     try {
-      auth.removeToken();
+      await auth.removeToken();
       setUser(null);
       router.push('/login');
     } catch (error) {
@@ -46,26 +53,49 @@ export default function Header() {
   if (isLoading) return null;
 
   return (
-    <header className="bg-gray-900 text-white shadow-lg sticky top-0 z-50">
+    <header className="bg-black text-white shadow-lg border-b border-gray-800 sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-        <Link href="/" className="flex items-center gap-2">
-          <span className="text-2xl">🎬</span>
-          <span className="text-xl font-bold hover:text-yellow-400 transition-colors">
+        <Link
+          href="/"
+          className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          aria-label="На главную"
+        >
+          <span className="text-2xl" role="img" aria-hidden="true">🎬</span>
+          <span className="text-xl font-bold text-orange-500 hover:text-orange-400 transition-colors">
             Кинопоиск
           </span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-6">
-          <NavLink href="/about">О нас</NavLink>
+          <NavLink
+            href="/movies"
+            className="hover:text-orange-500 transition-colors"
+            activeClassName="text-orange-500 font-medium"
+          >
+            Фильмы
+          </NavLink>
+          <NavLink
+            href="/about"
+            className="hover:text-orange-500 transition-colors"
+            activeClassName="text-orange-500 font-medium"
+          >
+            О нас
+          </NavLink>
 
           {user ? (
             <div className="flex items-center gap-4">
-              <UserAvatar user={user} />
+              <UserAvatar
+                user={user}
+                className="w-8 h-8"
+                fallbackText={user.name?.[0] || user.username?.[0] || '?'}
+              />
               <button
                 onClick={handleLogout}
-                className="bg-red-600 px-3 py-1 rounded hover:bg-red-700 transition-colors"
+                className="bg-orange-700 hover:bg-orange-800 px-4 py-2 rounded-md transition-colors flex items-center gap-2"
+                aria-label="Выйти из аккаунта"
               >
-                Выйти
+                <ArrowRightOnRectangleIcon className="w-4 h-4" />
+                <span className="hidden sm:inline">Выйти</span>
               </button>
             </div>
           ) : (
@@ -76,6 +106,8 @@ export default function Header() {
         <MobileMenuButton
           isOpen={isMenuOpen}
           toggle={() => setIsMenuOpen(!isMenuOpen)}
+          className="md:hidden"
+          aria-label={isMenuOpen ? "Закрыть меню" : "Открыть меню"}
         />
       </div>
 
@@ -89,35 +121,58 @@ export default function Header() {
   );
 }
 
-// Вспомогательные компоненты
-const NavLink = ({ href, children, onClick }: { href: string; children: React.ReactNode; onClick?: () => void }) => (
-  <Link href={href} className="hover:text-yellow-400 transition-colors" onClick={onClick}>
+// Вспомогательные компоненты остаются без изменений
+const NavLink = ({
+  href,
+  children,
+  onClick,
+  className,
+  activeClassName
+}: {
+  href: string;
+  children: React.ReactNode;
+  onClick?: () => void;
+  className?: string;
+  activeClassName?: string;
+}) => (
+  <Link
+    href={href}
+    className={`${className || "hover:text-orange-500 transition-colors"} ${
+      typeof window !== 'undefined' && window.location.pathname === href ? activeClassName || '' : ''
+    }`}
+    onClick={onClick}
+  >
     {children}
   </Link>
 );
 
-const UserAvatar = ({ user }: { user: any }) => {
-  // Безопасно получаем имя пользователя, всегда используем имя зарегистрированного пользователя
+const UserAvatar = ({
+  user,
+  className,
+  fallbackText
+}: {
+  user: any;
+  className?: string;
+  fallbackText?: string;
+}) => {
   const username = user?.username || (user?.email ? user.email.split('@')[0] : '');
-  const displayName = username || 'Пользователь';
-  
+
   return (
     <Link href="/profile">
       <div className="flex items-center gap-2">
         {user?.avatar ? (
           <Image
             src={user.avatar}
-            alt={displayName}
+            alt={username || 'User'}
             width={32}
             height={32}
-            className="rounded-full"
+            className={`rounded-full ${className || ""}`}
           />
         ) : (
-          <div className="w-8 h-8 bg-indigo-600 rounded-full flex items-center justify-center text-white font-semibold">
-            {username ? username[0].toUpperCase() : 'U'}
+          <div className={`w-8 h-8 bg-orange-700 rounded-full flex items-center justify-center text-white font-semibold ${className || ""}`}>
+            {fallbackText || (username ? username[0].toUpperCase() : 'U')}
           </div>
         )}
-        <span className="hidden md:block">{displayName}</span>
       </div>
     </Link>
   );
@@ -125,20 +180,30 @@ const UserAvatar = ({ user }: { user: any }) => {
 
 const AuthButtons = () => (
   <div className="flex gap-3">
-    <Link href="/login" className="bg-blue-600 px-3 py-1 rounded hover:bg-blue-700 transition-colors">
+    <Link href="/login" className="bg-orange-600 px-3 py-1 rounded hover:bg-orange-700 transition-colors">
       Войти
     </Link>
-    <Link href="/register" className="bg-green-600 px-3 py-1 rounded hover:bg-green-700 transition-colors">
+    <Link href="/register" className="bg-gray-800 border border-orange-600 px-3 py-1 rounded hover:bg-gray-700 transition-colors">
       Регистрация
     </Link>
   </div>
 );
 
-const MobileMenuButton = ({ isOpen, toggle }: { isOpen: boolean; toggle: () => void }) => (
+const MobileMenuButton = ({
+  isOpen,
+  toggle,
+  className,
+  "aria-label": ariaLabel
+}: {
+  isOpen: boolean;
+  toggle: () => void;
+  className?: string;
+  "aria-label"?: string;
+}) => (
   <button
-    className="md:hidden p-2"
+    className={`p-2 ${className || ""}`}
     onClick={toggle}
-    aria-label={isOpen ? 'Закрыть меню' : 'Открыть меню'}
+    aria-label={ariaLabel || (isOpen ? 'Закрыть меню' : 'Открыть меню')}
   >
     {isOpen ? <XMarkIcon className="h-6 w-6" /> : <Bars3Icon className="h-6 w-6" />}
   </button>
@@ -155,23 +220,21 @@ const MobileMenu = ({
   onLogout: () => void;
   onNavigate: () => void
 }) => {
-  // Безопасно получаем имя пользователя, всегда используем имя зарегистрированного пользователя
   const username = user?.username || (user?.email ? user.email.split('@')[0] : '');
-  const displayName = username || 'Пользователь';
-  
+
   return (
-    <div className={`md:hidden bg-gray-800 px-4 py-2 ${isOpen ? 'block' : 'hidden'}`}>
+    <div className={`md:hidden bg-black border-t border-gray-800 px-4 py-2 ${isOpen ? 'block' : 'hidden'}`}>
       <div className="flex flex-col gap-3">
         <NavLink href="/movies" onClick={onNavigate}>Фильмы</NavLink>
         <NavLink href="/about" onClick={onNavigate}>О нас</NavLink>
         {user ? (
           <>
             <NavLink href="/profile" onClick={onNavigate}>
-              Профиль {username && `(${username})`}
+              {username || 'Профиль'}
             </NavLink>
             <button
               onClick={onLogout}
-              className="text-left py-2 text-red-400 hover:text-red-300 transition-colors"
+              className="text-left py-2 text-orange-400 hover:text-orange-300 transition-colors"
             >
               Выйти
             </button>

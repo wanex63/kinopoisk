@@ -10,6 +10,7 @@ import Image from 'next/image';
 export default function MovieCard({ movie }: { movie: Movie }) {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   return (
     <div
@@ -19,14 +20,22 @@ export default function MovieCard({ movie }: { movie: Movie }) {
     >
       <Link href={`/movies/${movie.id}`} className="block relative">
         <div className="relative aspect-[2/3]">
-          <Image
-            src={movie.poster_url || '/placeholder.jpg'}
-            alt={movie.title}
-            fill
-            className="object-cover transition-transform duration-300"
-            style={{ transform: isHovered ? 'scale(1.05)' : 'scale(1)' }}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          />
+          {!imgError ? (
+            <Image
+              src={movie.poster_url || '/placeholder.jpg'}
+              alt={movie.title}
+              fill
+              className="object-cover transition-transform duration-300"
+              style={{ transform: isHovered ? 'scale(1.05)' : 'scale(1)' }}
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              onError={() => setImgError(true)}
+              priority={false}
+            />
+          ) : (
+            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+              <span className="text-gray-500">No image</span>
+            </div>
+          )}
         </div>
 
         <button
