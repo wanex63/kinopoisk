@@ -7,6 +7,7 @@ import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { HeartIcon } from '@heroicons/react/24/solid';
 import { Movie } from '@/types/movie';
 import MoviePlaceholder from '@/components/MoviePlaceholder';
+import Comments from '@/components/Comments';
 import moviesData from '@/data/movies.json';
 
 // Преобразуем данные в формат Record для быстрого поиска по ID
@@ -184,6 +185,11 @@ export default function MovieDetailPage() {
               </button>
             </div>
           </div>
+        </div>
+        
+        {/* Секция комментариев */}
+        <div className="mt-10">
+          <Comments movieId={params.id as string} />
         </div>
       </div>
     </div>

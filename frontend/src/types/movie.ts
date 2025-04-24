@@ -19,4 +19,15 @@ export interface MovieListItem {
   rating: number;
   image: string;
   genre: string;
+}
+
+export interface Comment {
+  id: number;
+  user: number;
+  username: string;
+  user_avatar?: string;
+  movie: number;
+  text: string;
+  created_at: string;
+  updated_at: string;
 } 

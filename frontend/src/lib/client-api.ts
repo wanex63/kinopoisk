@@ -3,6 +3,15 @@
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 
+interface UserJwtPayload {
+  username?: string;
+  email?: string;
+  bio?: string;
+  avatar?: string;
+  exp?: number;
+  iat?: number;
+}
+
 const clientApi = axios.create({
   baseURL: '/api',
 });
@@ -41,7 +50,14 @@ export const auth = {
   setToken: (token: string) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('token', token);
-      return jwtDecode(token);
+      const decodedToken = jwtDecode<UserJwtPayload>(token);
+      
+      // Сохраняем дополнительные данные пользователя в localStorage
+      if (decodedToken.avatar) {
+        localStorage.setItem('userAvatar', decodedToken.avatar);
+      }
+      
+      return decodedToken;
     }
     return null;
   },
@@ -49,12 +65,24 @@ export const auth = {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
+      localStorage.removeItem('userAvatar');
     }
   },
   getCurrentUser: () => {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
-      return token ? jwtDecode(token) : null;
+      if (!token) return null;
+      
+      const decodedToken = jwtDecode<UserJwtPayload>(token);
+      // Пытаемся получить сохраненный аватар из localStorage, если его нет в токене
+      if (!decodedToken.avatar) {
+        const savedAvatar = localStorage.getItem('userAvatar');
+        if (savedAvatar) {
+          decodedToken.avatar = savedAvatar;
+        }
+      }
+      
+      return decodedToken;
     }
     return null;
   },

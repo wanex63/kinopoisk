@@ -160,3 +160,47 @@ class Favorite(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.movie.title}"
+
+
+class Comment(models.Model):
+    user = models.ForeignKey(
+        CustomUser, 
+        on_delete=models.CASCADE, 
+        related_name='comments',
+        verbose_name=_('user'),
+        help_text=_('User who posted the comment')
+    )
+    movie = models.ForeignKey(
+        Movie, 
+        on_delete=models.CASCADE, 
+        related_name='comments',
+        verbose_name=_('movie'),
+        help_text=_('Movie being commented on')
+    )
+    text = models.TextField(
+        _('text'),
+        help_text=_('Comment text')
+    )
+    created_at = models.DateTimeField(
+        _('created at'),
+        auto_now_add=True,
+        help_text=_('Date when comment was created')
+    )
+    updated_at = models.DateTimeField(
+        _('updated at'),
+        auto_now=True,
+        help_text=_('Date when comment was last updated')
+    )
+
+    class Meta:
+        verbose_name = _('comment')
+        verbose_name_plural = _('comments')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user'], name='comment_user_idx'),
+            models.Index(fields=['movie'], name='comment_movie_idx'),
+            models.Index(fields=['created_at'], name='comment_created_idx'),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} on {self.movie.title}: {self.text[:50]}"

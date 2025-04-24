@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Movie, Genre, Favorite
+from .models import Movie, Genre, Favorite, Comment
 from django.utils.text import slugify
 
 class GenreSerializer(serializers.ModelSerializer):
@@ -44,3 +44,30 @@ class MovieCreateUpdateSerializer(serializers.ModelSerializer):
         model = Movie
         fields = ('kinopoisk_id', 'title', 'original_title', 'description',
                 'year', 'rating', 'poster_url', 'genres', 'duration', 'countries')
+
+class CommentSerializer(serializers.ModelSerializer):
+    username = serializers.SerializerMethodField()
+    user_avatar = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Comment
+        fields = ('id', 'user', 'username', 'user_avatar', 'movie', 'text', 'created_at', 'updated_at')
+        read_only_fields = ('created_at', 'updated_at')
+    
+    def get_username(self, obj):
+        return obj.user.username
+    
+    def get_user_avatar(self, obj):
+        if obj.user.avatar:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.user.avatar.url)
+        return None
+        
+        
+class CommentCreateSerializer(serializers.ModelSerializer):
+    user = serializers.HiddenField(default=serializers.CurrentUserDefault())
+    
+    class Meta:
+        model = Comment
+        fields = ('user', 'movie', 'text')

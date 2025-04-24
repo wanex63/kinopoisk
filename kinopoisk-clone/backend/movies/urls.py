@@ -3,7 +3,9 @@ from .views import (
     MovieListView,
     MovieDetailView,
     FavoriteListView,
-    FavoriteAddRemoveView
+    FavoriteAddRemoveView,
+    CommentListCreateView,
+    CommentDetailView
 )
 
 app_name = 'movies'
@@ -16,4 +18,11 @@ urlpatterns = [
     path('favorites/<int:movie_id>/',
          FavoriteAddRemoveView.as_view(),
          name='favorite_add_remove'),
+    # URLs для комментариев
+    path('<int:movie_id>/comments/', 
+         CommentListCreateView.as_view(), 
+         name='comment_list_create'),
+    path('<int:movie_id>/comments/<int:pk>/', 
+         CommentDetailView.as_view(), 
+         name='comment_detail'),
 ]

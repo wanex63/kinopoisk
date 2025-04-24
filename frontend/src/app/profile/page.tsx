@@ -210,6 +210,17 @@ export default function ProfilePage() {
       setIsEditing(false);
       setAvatarPreview(null);
       setAvatar(null);
+      
+      // Сохраняем аватар в localStorage для доступа на других страницах
+      if (response.data.avatar) {
+        localStorage.setItem('userAvatar', response.data.avatar);
+        
+        // Создаем событие для обновления UI в других компонентах
+        const updateEvent = new CustomEvent('user-profile-updated', { 
+          detail: { avatar: response.data.avatar } 
+        });
+        window.dispatchEvent(updateEvent);
+      }
     } catch (error: any) {
       console.error('Failed to update profile:', error);
       setError(error.response?.data?.detail || 'Ошибка при обновлении профиля');

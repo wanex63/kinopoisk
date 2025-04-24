@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Movie, Genre, Favorite
+from .models import Movie, Genre, Favorite, Comment
 from django.utils.html import format_html
 
 class GenreInline(admin.TabularInline):
@@ -35,3 +35,17 @@ class FavoriteAdmin(admin.ModelAdmin):
     list_filter = ('added_at',)
     search_fields = ('user__username', 'movie__title')
     date_hierarchy = 'added_at'
+
+@admin.register(Comment)
+class CommentAdmin(admin.ModelAdmin):
+    list_display = ('movie', 'user', 'text_preview', 'created_at')
+    list_filter = ('movie', 'created_at')
+    search_fields = ('text', 'user__username', 'movie__title')
+    raw_id_fields = ('user', 'movie')
+    date_hierarchy = 'created_at'
+    
+    def text_preview(self, obj):
+        if len(obj.text) > 50:
+            return obj.text[:50] + '...'
+        return obj.text
+    text_preview.short_description = 'Comment'
