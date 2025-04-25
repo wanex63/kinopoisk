@@ -1,16 +1,24 @@
 'use client';
 
 import Link from 'next/link';
-import { StarIcon, HeartIcon } from '@heroicons/react/24/solid';
+import { StarIcon, HeartIcon, PlayIcon } from '@heroicons/react/24/solid';
 import { Movie } from '@/lib/types';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 export default function MovieCard({ movie }: { movie: Movie }) {
   const [isFavorite, setIsFavorite] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const router = useRouter();
+  
+  const handleWatchClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    router.push(`/movies/${movie.id}/watch`);
+  };
 
   return (
     <div
@@ -36,6 +44,16 @@ export default function MovieCard({ movie }: { movie: Movie }) {
               <span className="text-gray-500">No image</span>
             </div>
           )}
+
+          <div className="absolute bottom-0 inset-x-0 bg-black bg-opacity-70 py-2 px-2 flex items-center justify-center">
+            <button 
+              onClick={handleWatchClick}
+              className="bg-orange-500 hover:bg-orange-600 text-black font-semibold py-1 px-3 rounded-full flex items-center transition-all duration-200 transform hover:scale-105 w-full justify-center"
+            >
+              <PlayIcon className="h-4 w-4 mr-1" />
+              Смотреть онлайн
+            </button>
+          </div>
         </div>
 
         <button

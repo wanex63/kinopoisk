@@ -6,6 +6,8 @@ import Image from 'next/image';
 import { MovieListItem } from '@/types/movie';
 import MoviePlaceholder from '@/components/MoviePlaceholder';
 import moviesData from '@/data/movies.json';
+import { PlayIcon } from '@heroicons/react/24/solid';
+import { useRouter } from 'next/navigation';
 
 // Трансформируем данные в нужный формат
 const MOVIES_LIST: MovieListItem[] = moviesData.map(movie => ({
@@ -19,40 +21,60 @@ const MOVIES_LIST: MovieListItem[] = moviesData.map(movie => ({
 
 const MovieCard = ({ movie }: { movie: MovieListItem }) => {
   const [imgError, setImgError] = useState(false);
+  const router = useRouter();
+  
+  const handleWatchClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    router.push(`/movies/${movie.id}/watch`);
+  };
 
   return (
-    <Link 
-      href={`/movies/${movie.id}`}
-      className="block transition-transform hover:scale-[1.02] hover:shadow-lg rounded-lg overflow-hidden bg-white"
-    >
-      <div className="relative h-[300px] md:h-[350px]">
-        {!imgError ? (
-          <Image
-            src={movie.image}
-            alt={movie.title}
-            fill
-            style={{ objectFit: 'cover' }}
-            className="transition-opacity hover:opacity-95"
-            onError={() => setImgError(true)}
-          />
-        ) : (
-          <MoviePlaceholder 
-            title={movie.title} 
-            className="absolute inset-0 w-full h-full"
-          />
-        )}
-        <div className="absolute top-2 right-2 bg-yellow-400 text-yellow-900 px-2 py-1 rounded-md font-bold z-10">
-          {movie.rating.toFixed(1)}
+    <div className="block transition-transform hover:scale-[1.02] hover:shadow-lg rounded-lg overflow-hidden bg-white relative">
+      <Link 
+        href={`/movies/${movie.id}`}
+        className="block"
+      >
+        <div className="relative h-[300px] md:h-[350px]">
+          {!imgError ? (
+            <Image
+              src={movie.image}
+              alt={movie.title}
+              fill
+              style={{ objectFit: 'cover' }}
+              className="transition-opacity hover:opacity-95"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <MoviePlaceholder 
+              title={movie.title} 
+              className="absolute inset-0 w-full h-full"
+            />
+          )}
+          <div className="absolute top-2 right-2 bg-yellow-400 text-yellow-900 px-2 py-1 rounded-md font-bold z-10">
+            {movie.rating.toFixed(1)}
+          </div>
+          
+          {/* Кнопка "Смотреть онлайн" */}
+          <div className="absolute bottom-0 inset-x-0 bg-black bg-opacity-70 py-2 px-3 flex items-center justify-center">
+            <button 
+              onClick={handleWatchClick}
+              className="bg-orange-500 hover:bg-orange-600 text-black font-semibold py-2 px-4 rounded-full flex items-center transition-all duration-200 w-full justify-center"
+            >
+              <PlayIcon className="h-5 w-5 mr-2" />
+              Смотреть онлайн
+            </button>
+          </div>
         </div>
-      </div>
-      <div className="p-4">
-        <h3 className="text-lg font-semibold mb-1">{movie.title}</h3>
-        <div className="flex justify-between text-sm text-gray-600">
-          <span>{movie.year}</span>
-          <span className="truncate ml-2">{movie.genre}</span>
+        <div className="p-4">
+          <h3 className="text-lg font-semibold mb-1">{movie.title}</h3>
+          <div className="flex justify-between text-sm text-gray-600">
+            <span>{movie.year}</span>
+            <span className="truncate ml-2">{movie.genre}</span>
+          </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+    </div>
   );
 };
 

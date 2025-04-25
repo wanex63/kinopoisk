@@ -21,6 +21,10 @@ interface UserJwtPayload extends JwtPayload {
   email?: string;
   bio?: string;
   avatar?: string;
+  work?: string;
+  education?: string;
+  profession?: string;
+  city?: string;
 }
 
 interface UserData {
@@ -28,6 +32,10 @@ interface UserData {
   email: string;
   bio: string;
   avatar?: string;
+  work?: string;
+  education?: string;
+  profession?: string;
+  city?: string;
 }
 
 const ALL_MOVIES: MovieListItem[] = moviesData.map(movie => ({
@@ -85,14 +93,22 @@ export default function ProfilePage() {
           username: response.data.username || currentUser.username || '',
           email: response.data.email || currentUser.email || '',
           bio: response.data.bio || currentUser.bio || '',
-          avatar: response.data.avatar
+          avatar: response.data.avatar ? getAvatarUrl(response.data.avatar) as string : undefined,
+          work: response.data.work || currentUser.work || '',
+          education: response.data.education || currentUser.education || '',
+          profession: response.data.profession || currentUser.profession || '',
+          city: response.data.city || currentUser.city || ''
         };
 
         setUser(userData);
         setEditedUser({
           username: userData.username,
           email: userData.email,
-          bio: userData.bio
+          bio: userData.bio,
+          work: userData.work || '',
+          education: userData.education || '',
+          profession: userData.profession || '',
+          city: userData.city || ''
         });
       } catch (error) {
         console.error('Failed to fetch user:', error);
@@ -101,7 +117,12 @@ export default function ProfilePage() {
           const userData: UserData = {
             username: currentUser.username || '',
             email: currentUser.email || '',
-            bio: currentUser.bio || ''
+            bio: currentUser.bio || '',
+            avatar: currentUser.avatar ? getAvatarUrl(currentUser.avatar) as string : undefined,
+            work: currentUser.work || '',
+            education: currentUser.education || '',
+            profession: currentUser.profession || '',
+            city: currentUser.city || ''
           };
           setUser(userData);
           setEditedUser(userData);
@@ -151,7 +172,11 @@ export default function ProfilePage() {
       setEditedUser({
         username: user.username,
         email: user.email,
-        bio: user.bio
+        bio: user.bio,
+        work: user.work || '',
+        education: user.education || '',
+        profession: user.profession || '',
+        city: user.city || ''
       });
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -196,6 +221,10 @@ export default function ProfilePage() {
       formData.append('username', editedUser.username);
       formData.append('email', editedUser.email);
       formData.append('bio', editedUser.bio);
+      formData.append('work', editedUser.work || '');
+      formData.append('education', editedUser.education || '');
+      formData.append('profession', editedUser.profession || '');
+      formData.append('city', editedUser.city || '');
       if (avatar) formData.append('avatar', avatar);
 
       const response = await axios.put('http://localhost:8000/api/auth/', formData, {
@@ -205,19 +234,27 @@ export default function ProfilePage() {
         }
       });
 
-      setUser(response.data);
+      // Обновляем пользователя с полученными данными
+      const updatedUser = { ...response.data };
+      
+      // Форматируем аватар для хранения полного URL
+      if (updatedUser.avatar) {
+        updatedUser.avatar = getAvatarUrl(updatedUser.avatar) as string;
+      }
+      
+      setUser(updatedUser);
       setSuccess('Профиль успешно обновлен');
       setIsEditing(false);
       setAvatarPreview(null);
       setAvatar(null);
       
       // Сохраняем аватар в localStorage для доступа на других страницах
-      if (response.data.avatar) {
-        localStorage.setItem('userAvatar', response.data.avatar);
+      if (updatedUser.avatar) {
+        localStorage.setItem('userAvatar', updatedUser.avatar);
         
         // Создаем событие для обновления UI в других компонентах
         const updateEvent = new CustomEvent('user-profile-updated', { 
-          detail: { avatar: response.data.avatar } 
+          detail: { avatar: updatedUser.avatar } 
         });
         window.dispatchEvent(updateEvent);
       }
@@ -238,6 +275,17 @@ export default function ProfilePage() {
       setSuccess('Фильм удален из избранного');
       setTimeout(() => setSuccess(null), 3000);
     }
+  };
+
+  // Функция для форматирования URL аватара
+  const getAvatarUrl = (avatar: string | undefined) => {
+    if (!avatar) return null;
+    // Если URL уже абсолютный (начинается с http:// или https://)
+    if (avatar.startsWith('http://') || avatar.startsWith('https://')) {
+      return avatar;
+    }
+    // Иначе добавляем базовый URL API
+    return `http://localhost:8000${avatar}`;
   };
 
   if (loading) {
@@ -279,7 +327,7 @@ export default function ProfilePage() {
               {avatarPreview ? (
                 <Image src={avatarPreview} alt="Preview" fill className="object-cover" />
               ) : user?.avatar ? (
-                <Image src={user.avatar} alt="Avatar" fill className="object-cover" />
+                <Image src={getAvatarUrl(user.avatar) || '/placeholder-avatar.png'} alt="Avatar" fill className="object-cover" />
               ) : (
                 <User className="h-12 w-12 text-orange-500" />
               )}
@@ -339,6 +387,50 @@ export default function ProfilePage() {
                 className="mt-1 bg-gray-800"
               />
             </div>
+            <div>
+              <Label htmlFor="city">Город</Label>
+              <Input
+                id="city"
+                name="city"
+                value={editedUser.city || ''}
+                onChange={handleInputChange}
+                className="mt-1 bg-gray-800"
+                placeholder="Например: Москва"
+              />
+            </div>
+            <div>
+              <Label htmlFor="profession">Профессия</Label>
+              <Input
+                id="profession"
+                name="profession"
+                value={editedUser.profession || ''}
+                onChange={handleInputChange}
+                className="mt-1 bg-gray-800"
+                placeholder="Например: Разработчик ПО"
+              />
+            </div>
+            <div>
+              <Label htmlFor="work">Место работы</Label>
+              <Input
+                id="work"
+                name="work"
+                value={editedUser.work || ''}
+                onChange={handleInputChange}
+                className="mt-1 bg-gray-800"
+                placeholder="Например: ООО 'Компания'"
+              />
+            </div>
+            <div>
+              <Label htmlFor="education">Образование</Label>
+              <Input
+                id="education"
+                name="education"
+                value={editedUser.education || ''}
+                onChange={handleInputChange}
+                className="mt-1 bg-gray-800"
+                placeholder="Например: МГУ, факультет ВМК"
+              />
+            </div>
 
             <div className="flex justify-end gap-2 mt-6">
               <Button
@@ -391,9 +483,9 @@ export default function ProfilePage() {
 
         <div className="flex flex-col md:flex-row gap-6 items-start">
           <div className="flex flex-col items-center">
-            <div className="w-24 h-24 rounded-full overflow-hidden mb-2 bg-gray-800 flex items-center justify-center">
+            <div className="w-24 h-24 rounded-full overflow-hidden mb-2 bg-gray-800 flex items-center justify-center relative">
               {user?.avatar ? (
-                <Image src={user.avatar} alt="Avatar" width={96} height={96} className="object-cover" />
+                <Image src={getAvatarUrl(user.avatar) || '/placeholder-avatar.png'} alt="Avatar" fill className="object-cover" />
               ) : (
                 <User className="h-12 w-12 text-orange-500" />
               )}
@@ -412,6 +504,25 @@ export default function ProfilePage() {
             <div>
               <h3 className="text-sm font-medium text-gray-400">О себе</h3>
               <p className="text-white">{user?.bio || 'Не указано'}</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+              <div>
+                <h3 className="text-sm font-medium text-gray-400">Город</h3>
+                <p className="text-white">{user?.city || 'Не указано'}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-400">Профессия</h3>
+                <p className="text-white">{user?.profession || 'Не указано'}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-400">Место работы</h3>
+                <p className="text-white">{user?.work || 'Не указано'}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-400">Образование</h3>
+                <p className="text-white">{user?.education || 'Не указано'}</p>
+              </div>
             </div>
 
             <div className="pt-4">
@@ -495,7 +606,8 @@ export default function ProfilePage() {
                   )}
                 </div>
                 <h2 className="text-xl font-bold">{user?.username || 'Гость'}</h2>
-                <p className="text-gray-400">Пользователь</p>
+                <p className="text-gray-400">{user?.profession || 'Пользователь'}</p>
+                {user?.city && <p className="text-gray-500 text-sm">{user.city}</p>}
               </div>
 
               <div className="space-y-2">

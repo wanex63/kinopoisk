@@ -7,9 +7,10 @@ import { MovieListItem } from '@/types/movie';
 import MoviePlaceholder from '@/components/MoviePlaceholder';
 import MovieCarousel from '@/components/MovieCarousel';
 import moviesData from '@/data/movies.json';
-import { HeartIcon, MagnifyingGlassIcon } from '@heroicons/react/24/solid';
+import { HeartIcon, MagnifyingGlassIcon, PlayIcon } from '@heroicons/react/24/solid';
 import { auth } from '@/lib/client-api';
 import { JwtPayload } from 'jwt-decode';
+import { useRouter } from 'next/navigation';
 
 interface UserJwtPayload extends JwtPayload {
   username?: string;
@@ -33,6 +34,13 @@ const MovieCard = ({ movie, isFavorite, onToggleFavorite }: {
   onToggleFavorite: (id: string) => void;
 }) => {
   const [imgError, setImgError] = useState(false);
+  const router = useRouter();
+  
+  const handleWatchClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    router.push(`/movies/${movie.id}/watch`);
+  };
 
   return (
     <div className="block transition-transform hover:scale-[1.02] hover:shadow-lg rounded-lg overflow-hidden bg-gray-900 border border-gray-800 relative">
@@ -58,6 +66,17 @@ const MovieCard = ({ movie, isFavorite, onToggleFavorite }: {
           )}
           <div className="absolute top-2 right-2 bg-orange-500 text-black px-2 py-1 rounded-md font-bold z-10">
             {movie.rating.toFixed(1)}
+          </div>
+          
+          {/* Кнопка "Смотреть онлайн" */}
+          <div className="absolute bottom-0 inset-x-0 bg-black bg-opacity-70 py-2 px-2 flex items-center justify-center z-10">
+            <button 
+              onClick={handleWatchClick}
+              className="bg-orange-500 hover:bg-orange-600 text-black font-semibold py-1 px-3 rounded-full flex items-center transition-all duration-200 w-full justify-center"
+            >
+              <PlayIcon className="h-4 w-4 mr-1" />
+              Смотреть онлайн
+            </button>
           </div>
         </div>
         <div className="p-4">

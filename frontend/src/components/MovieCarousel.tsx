@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronLeftIcon, ChevronRightIcon, HeartIcon } from '@heroicons/react/24/solid';
+import { ChevronLeftIcon, ChevronRightIcon, HeartIcon, PlayIcon } from '@heroicons/react/24/solid';
 import { useState, useEffect } from 'react';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -8,6 +8,7 @@ import { MovieListItem } from '@/types/movie';
 import Link from 'next/link';
 import Image from 'next/image';
 import MoviePlaceholder from './MoviePlaceholder';
+import { useRouter } from 'next/navigation';
 
 export default function MovieCarousel({ 
   movies, 
@@ -107,6 +108,14 @@ function CarouselMovieCard({
   onToggleFavorite?: (id: string) => void;
 }) {
   const [imgError, setImgError] = useState(false);
+  const router = useRouter();
+  
+  // Функция для перехода на страницу просмотра фильма
+  const handleWatchClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    router.push(`/movies/${movie.id}/watch`);
+  };
   
   return (
     <div className="block h-full transition-transform hover:scale-[1.02] hover:shadow-lg rounded-lg overflow-hidden bg-gray-900 border border-gray-800 relative">
@@ -132,6 +141,17 @@ function CarouselMovieCard({
           )}
           <div className="absolute top-2 right-2 bg-orange-500 text-black px-2 py-1 rounded-md font-bold z-10">
             {movie.rating.toFixed(1)}
+          </div>
+          
+          {/* Кнопка "Смотреть онлайн" */}
+          <div className="absolute bottom-0 inset-x-0 bg-black bg-opacity-70 py-2 px-2 flex items-center justify-center">
+            <button 
+              onClick={handleWatchClick}
+              className="bg-orange-500 hover:bg-orange-600 text-black font-semibold py-1 px-2 rounded-full flex items-center transition-all duration-200 w-full justify-center text-xs"
+            >
+              <PlayIcon className="h-3 w-3 mr-1" />
+              Смотреть онлайн
+            </button>
           </div>
         </div>
         <div className="p-3">
